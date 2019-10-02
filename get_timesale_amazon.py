@@ -51,6 +51,7 @@ def get_timesale():
     #nextpage = elem.click()
 
     # 終了
+    # test
     driver.quit()
 
 if __name__ == "__main__":
