@@ -6,7 +6,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 import time
-
+from time import sleep
+import datetime
+import openpyxl
 
 def get_timesale():
     # URL
@@ -14,7 +16,7 @@ def get_timesale():
 
     # ヘッドレスモードを設定
     options = Options()
-    #options.add_argument("--headless")
+    options.add_argument("--headless")
 
     # webdriverを設定
     CHROME_PATH = "C:\\work\\99_tool\\chromedriver_win32\\chromedriver.exe"
@@ -22,36 +24,53 @@ def get_timesale():
 
     # htmlを取得
     driver.get(URL)
-    driver.set_page_load_timeout(10)
 
-    """
-    # soupオブジェクトを作成
-    soup = BeautifulSoup(driver.page_source, "lxml")
+    # 出力ファイル設定
+    now = datetime.datetime.now()
+    output = "C:\\work\\99_tool\\" + "amazon_{0:%Y%m%d%H%M%S}.xlsx".format(now)
+    # ワークブック新規作成
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    row_num = 1
 
-    # タイムセール商品を取得
-    for hinmoku in soup.find_all("div", class_="a-section layer"):
-        price = hinmoku.find("span", class_="a-size-medium inlineBlock unitLineHeight dealPriceText")
-        product_name = hinmoku.find("a", class_="a-size-base a-link-normal dealTitleTwoLine singleCellTitle autoHeight")
+    # 要素があれば継続
+    while True:
         try:
-            print(price.text.strip())
-            print(product_name.text.strip())
-            print(product_name.get("href").strip())
+            # soupオブジェクトを作成
+            soup = BeautifulSoup(driver.page_source, "lxml")
+            # タイムセール商品を取得
+            for hinmoku in soup.find_all("div", class_="a-section layer"):
+                price = hinmoku.find("span", class_="a-size-medium inlineBlock unitLineHeight dealPriceText")
+                product_name = hinmoku.find("a", class_="a-size-base a-link-normal dealTitleTwoLine singleCellTitle autoHeight")
+                if hinmoku is None:
+                    continue
+                if price is None:
+                    continue
+                if product_name is None:
+                    continue
+                print(price.text.strip())
+                ws.cell(row=row_num, column=1, value=price.text.strip())
+                print(product_name.text.strip())
+                print(product_name.get("href").strip())
+                ws.cell(row=row_num, column=2, value=product_name.text.strip())
+                ws.cell(row=row_num, column=3, value=product_name.get("href").strip())
+                row_num += 1
+            nextpage = driver.find_element_by_partial_link_text("次へ")
+            # 次へボタンクリック
+            nextpage.click()
+            # 読み込みのため5秒間待機
+            sleep(5)
+            # とりあえず1000件で終了
+            if row_num >= 1000:
+                break
         except Exception as e:
             print(e)
-    """
-    # 次のページへ
-    try:
-        nextpage = driver.find_element_by_class_name("a-last").click()
-        print(nextpage)
-    except Exception as e:
-        print(e)
+            # 次へボタンがなければループから抜ける
+            break
     
-    #wait = WebDriverWait(driver, 10)
-    #elem = wait.until( expected_conditions.element_to_be_clickable( (By.CLASS_NAME, "a-last")))
-    #nextpage = elem.click()
-
+    # ワークブックを保存
+    wb.save(output)
     # 終了
-    # test
     driver.quit()
 
 if __name__ == "__main__":
