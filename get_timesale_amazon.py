@@ -9,8 +9,17 @@ import time
 from time import sleep
 import datetime
 import openpyxl
+import os
+import logging.config
+
 
 def get_timesale():
+    # ログ設定
+    ini_name = os.path.join(os.path.dirname(__file__), "config\\logging.ini")
+    logging.config.fileConfig(ini_name)
+    logger = logging.getLogger("testLog")
+    logger.info("処理を開始します")
+
     # URL
     URL = "https://www.amazon.co.jp/gp/goldbox?ref_=nav_cs_gb"
 
@@ -19,7 +28,7 @@ def get_timesale():
     options.add_argument("--headless")
 
     # webdriverを設定
-    CHROME_PATH = "C:\\work\\99_tool\\chromedriver_win32\\chromedriver.exe"
+    CHROME_PATH = os.path.join(os.path.dirname(__file__), "driver\\chromedriver.exe")
     driver = webdriver.Chrome(executable_path=CHROME_PATH, options=options)
 
     # htmlを取得
@@ -48,10 +57,10 @@ def get_timesale():
                     continue
                 if product_name is None:
                     continue
-                print(price.text.strip())
+                logger.debug(price.text.strip())
                 ws.cell(row=row_num, column=1, value=price.text.strip())
-                print(product_name.text.strip())
-                print(product_name.get("href").strip())
+                logger.debug(product_name.text.strip())
+                logger.debug(product_name.get("href").strip())
                 ws.cell(row=row_num, column=2, value=product_name.text.strip())
                 ws.cell(row=row_num, column=3, value=product_name.get("href").strip())
                 row_num += 1
@@ -61,10 +70,12 @@ def get_timesale():
             # 読み込みのため5秒間待機
             sleep(5)
             # とりあえず1000件で終了
-            if row_num >= 1000:
+            if row_num >= 100:
+                logger.info("件数が上限に達したため、このへんでやめます")
                 break
         except Exception as e:
-            print(e)
+            logger.info("例外が発生しました")
+            logger.info(e)
             # 次へボタンがなければループから抜ける
             break
     
@@ -72,6 +83,8 @@ def get_timesale():
     wb.save(output)
     # 終了
     driver.quit()
+    # 終了ログ
+    logger.info("処理を終了します")
 
 if __name__ == "__main__":
 
